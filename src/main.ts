@@ -15,6 +15,17 @@ const progressBar = progressEl.querySelector(".progress-bar") as HTMLDivElement;
 const progressText = progressEl.querySelector(".progress-text") as HTMLSpanElement;
 const resultsEl = document.getElementById("results") as HTMLDivElement;
 
+// Form inputs
+const ownerInput = document.getElementById("owner") as HTMLInputElement;
+const repoInput = document.getElementById("repo") as HTMLInputElement;
+const pathInput = document.getElementById("path") as HTMLInputElement;
+const branchInput = document.getElementById("branch") as HTMLInputElement;
+const tokenInput = document.getElementById("token") as HTMLInputElement;
+const commitMessageInput = document.getElementById("commit-message") as HTMLInputElement;
+
+// Storage key for config
+const STORAGE_KEY = "penpot-github-exporter-config";
+
 // Store config for GitHub uploads
 let githubConfig: {
   owner: string;
@@ -24,6 +35,38 @@ let githubConfig: {
   token: string;
   commitMessage: string;
 } | null = null;
+
+// Load saved config from localStorage
+function loadSavedConfig() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const config = JSON.parse(saved);
+      console.log("[UI] Loaded saved config");
+      
+      if (config.owner) ownerInput.value = config.owner;
+      if (config.repo) repoInput.value = config.repo;
+      if (config.path) pathInput.value = config.path;
+      if (config.branch) branchInput.value = config.branch;
+      if (config.token) tokenInput.value = config.token;
+      if (config.commitMessage) commitMessageInput.value = config.commitMessage;
+    }
+  } catch (error) {
+    console.log("[UI] Error loading saved config:", error);
+  }
+}
+
+// Save config to localStorage
+function saveConfig(config: typeof githubConfig) {
+  try {
+    if (config) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      console.log("[UI] Config saved");
+    }
+  } catch (error) {
+    console.log("[UI] Error saving config:", error);
+  }
+}
 
 // Helper functions
 function showStatus(message: string, type: "info" | "success" | "error") {
@@ -71,8 +114,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
   const { owner, repo, branch, token } = githubConfig;
 
   console.log("[UI] Validating GitHub connection...");
-  console.log("[UI] Token length:", token?.length);
-  console.log("[UI] Token starts with:", token?.substring(0, 4));
 
   try {
     const headers = {
@@ -81,13 +122,10 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
     };
 
     // Test 1: Check if token is valid
-    console.log("[UI] Testing token with /user endpoint...");
     const userResponse = await fetch("https://api.github.com/user", { headers });
     console.log("[UI] /user response status:", userResponse.status);
 
     if (!userResponse.ok) {
-      const errorBody = await userResponse.text();
-      console.log("[UI] /user error body:", errorBody);
       if (userResponse.status === 401) {
         return { valid: false, error: "Invalid GitHub token. Please check your Personal Access Token." };
       }
@@ -98,7 +136,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
     console.log("[UI] Authenticated as:", userData.login);
 
     // Test 2: Check if repo exists
-    console.log("[UI] Checking repo access:", `${owner}/${repo}`);
     const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
     console.log("[UI] /repos response status:", repoResponse.status);
 
@@ -110,7 +147,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
     }
 
     // Test 3: Check if branch exists
-    console.log("[UI] Checking branch:", branch);
     const branchResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${branch}`, { headers });
     console.log("[UI] /branches response status:", branchResponse.status);
 
@@ -123,8 +159,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
 
     // Test 4: Check write permissions
     const repoData = await repoResponse.json();
-    console.log("[UI] Repo permissions:", repoData.permissions);
-
     if (repoData.permissions && !repoData.permissions.push) {
       return { valid: false, error: "Token doesn't have write access to this repository." };
     }
@@ -169,7 +203,6 @@ async function uploadFileToGitHub(
       if (existingResponse.ok) {
         const existingData = await existingResponse.json();
         sha = existingData.sha;
-        console.log("[UI] File exists, SHA:", sha);
       }
     } catch {
       // File doesn't exist, that's fine
@@ -190,7 +223,6 @@ async function uploadFileToGitHub(
     console.log("[UI] Upload response status:", response.status);
 
     if (response.ok) {
-      console.log("[UI] Upload success:", targetPath);
       return { success: true };
     } else {
       const errorData = await response.json();
@@ -220,15 +252,8 @@ form.addEventListener("submit", async (e) => {
     commitMessage: formData.get("commit-message") as string || "Upload assets from Penpot",
   };
 
-  console.log("[UI] Config:", {
-    owner: githubConfig.owner,
-    repo: githubConfig.repo,
-    path: githubConfig.path,
-    branch: githubConfig.branch,
-    tokenLength: githubConfig.token?.length || 0,
-    tokenPrefix: githubConfig.token?.substring(0, 10) + "...",
-    commitMessage: githubConfig.commitMessage,
-  });
+  // Save config for next time
+  saveConfig(githubConfig);
 
   // Validate
   if (!githubConfig.owner || !githubConfig.repo || !githubConfig.token) {
@@ -341,5 +366,8 @@ window.addEventListener("message", async (event) => {
     exportBtn.textContent = "Export & Upload";
   }
 });
+
+// Load saved config on startup
+loadSavedConfig();
 
 console.log("[UI] Event listeners attached");
