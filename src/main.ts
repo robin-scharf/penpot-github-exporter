@@ -1,7 +1,5 @@
 import "./style.css";
 
-console.log("[UI] GitHub Exporter UI loaded");
-
 // Get the current theme from the URL
 const searchParams = new URLSearchParams(window.location.search);
 document.body.dataset.theme = searchParams.get("theme") ?? "light";
@@ -72,7 +70,6 @@ function saveConfig(config: typeof githubConfig) {
 function showStatus(message: string, type: "info" | "success" | "error") {
   statusEl.textContent = message;
   statusEl.className = `status ${type}`;
-  console.log(`[UI] Status (${type}):`, message);
 }
 
 function showProgress(percent: number, text?: string) {
@@ -113,8 +110,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
 
   const { owner, repo, branch, token } = githubConfig;
 
-  console.log("[UI] Validating GitHub connection...");
-
   try {
     const headers = {
       "Authorization": `token ${token}`,
@@ -123,7 +118,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
 
     // Test 1: Check if token is valid
     const userResponse = await fetch("https://api.github.com/user", { headers });
-    console.log("[UI] /user response status:", userResponse.status);
 
     if (!userResponse.ok) {
       if (userResponse.status === 401) {
@@ -132,12 +126,10 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
       return { valid: false, error: `GitHub authentication failed: ${userResponse.status}` };
     }
 
-    const userData = await userResponse.json();
-    console.log("[UI] Authenticated as:", userData.login);
+    await userResponse.json();
 
     // Test 2: Check if repo exists
     const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
-    console.log("[UI] /repos response status:", repoResponse.status);
 
     if (!repoResponse.ok) {
       if (repoResponse.status === 404) {
@@ -148,7 +140,6 @@ async function validateGitHubConnection(): Promise<{ valid: boolean; error?: str
 
     // Test 3: Check if branch exists
     const branchResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${branch}`, { headers });
-    console.log("[UI] /branches response status:", branchResponse.status);
 
     if (!branchResponse.ok) {
       if (branchResponse.status === 404) {
@@ -193,8 +184,6 @@ async function uploadFileToGitHub(
     "Accept": "application/vnd.github.v3+json",
   };
 
-  console.log("[UI] Uploading:", targetPath);
-
   try {
     // Check if file exists to get SHA for update
     let sha: string | undefined;
@@ -220,19 +209,15 @@ async function uploadFileToGitHub(
       }),
     });
 
-    console.log("[UI] Upload response status:", response.status);
-
     if (response.ok) {
       return { success: true };
     } else {
       const errorData = await response.json();
       const errorMsg = errorData.message || `HTTP ${response.status}`;
-      console.log("[UI] Upload failed:", targetPath, errorMsg);
       return { success: false, error: errorMsg };
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Unknown error";
-    console.log("[UI] Upload error:", targetPath, errorMsg);
     return { success: false, error: errorMsg };
   }
 }
@@ -240,7 +225,6 @@ async function uploadFileToGitHub(
 // Form submission
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  console.log("[UI] Form submitted");
 
   const formData = new FormData(form);
   githubConfig = {
@@ -283,7 +267,6 @@ form.addEventListener("submit", async (e) => {
   showStatus("Starting export...", "info");
 
   // Step 2: Tell plugin to export assets (plugin will send back base64 data)
-  console.log("[UI] Sending start-export message to plugin");
   parent.postMessage({ type: "start-export" }, "*");
 });
 
@@ -300,7 +283,6 @@ window.addEventListener("message", async (event) => {
 
   // Plugin found no assets
   if (data.type === "no-assets") {
-    console.log("[UI] No assets found");
     hideProgress();
     exportBtn.disabled = false;
     exportBtn.textContent = "Export & Upload";
@@ -314,7 +296,6 @@ window.addEventListener("message", async (event) => {
 
   // Plugin finished exporting - now upload from UI
   if (data.type === "assets-ready") {
-    console.log("[UI] Received assets from plugin:", Object.keys(data.assets).length, "files");
 
     const assets = data.assets as Record<string, string>; // filename -> base64 content
     const filenames = Object.keys(assets);
@@ -369,5 +350,3 @@ window.addEventListener("message", async (event) => {
 
 // Load saved config on startup
 loadSavedConfig();
-
-console.log("[UI] Event listeners attached");
