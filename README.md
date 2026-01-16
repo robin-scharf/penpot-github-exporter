@@ -38,12 +38,12 @@ Start the development server:
 npm run dev
 ```
 
-The plugin will be available at `http://localhost:4400`.
+The plugin will be available at `http://localhost:4400/penpot-github-exporter/`.
 
 ### Loading in Penpot
 
 1. Open Penpot and press `Ctrl + Alt + P` to open the Plugin Manager
-2. Enter the manifest URL: `http://localhost:4400/manifest.json`
+2. Enter the manifest URL: `http://localhost:4400/penpot-github-exporter/manifest.json`
 3. Install and launch the plugin
 
 ## Configuration
@@ -67,6 +67,17 @@ Build output will be in the `dist/` folder.
 ## Deployment
 
 After building, deploy the contents of `dist/` to any static hosting service. See the [Penpot Deployment Guide](https://help.penpot.app/plugins/deployment/) for more details.
+
+### Forking / Custom Deployment
+
+If you fork this repository or deploy to a different path, update the `BASE_PATH` constant in `vite.config.ts`:
+
+```typescript
+// Change this when forking/deploying to a different path
+const BASE_PATH = '/your-repo-name/';
+```
+
+This will automatically update all paths including the generated `manifest.json`.
 
 ## Technologies
 
