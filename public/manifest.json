@@ -1,8 +1,8 @@
 {
   "name": "GitHub Exporter",
   "description": "Export assets with export profiles and upload them to a GitHub repository",
-  "code": "plugin.js",
-  "icon": "icon.svg",
+  "code": "/penpot-github-exporter/plugin.js",
+  "icon": "/penpot-github-exporter/icon.png",
   "permissions": [
     "content:read",
     "allow:downloads"

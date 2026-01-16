@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import livePreview from "vite-live-preview";
 
 export default defineConfig({
+  base: '/penpot-github-exporter/',
   plugins: [
     livePreview({
       reload: true,
@@ -15,11 +16,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        plugin: "src/plugin.ts",
-        index: "./index.html",
+        plugin: 'src/plugin.ts',
+        index: './index.html',
       },
       output: {
-        entryFileNames: "[name].js",
+        entryFileNames: '[name].js',
       },
     },
   },
@@ -27,4 +28,4 @@ export default defineConfig({
     port: 4400,
     cors: true,
   },
-});
+})
